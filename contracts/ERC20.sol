@@ -1,12 +1,11 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "hardhat/console.sol";
-
 
 contract Adminable{
 
   mapping (address => bool) public admins;
+  mapping (address => bool) public blackList;
 
   constructor(){
     admins[msg.sender] = true;
@@ -17,8 +16,22 @@ contract Adminable{
     _;
   }
 
+  modifier BlackList(address _user){
+    require(blackList[_user] == false, "Error: You are in the black list!");
+    _;
+  }
+
   function addAdmin(address _newAdmin) public onlyAdmin{
     admins[_newAdmin] = true;
+  }
+
+  function addIntoBlackList(address _user) public onlyAdmin{
+    blackList[_user] = true;
+  }
+
+  function removeFromBlackList(address _user) public payable {
+    require(admins[msg.sender] || msg.value >= 1 ether, "Error: Can`t remove this user from blacklist!");
+    blackList[_user] = false;
   }
 
 }
@@ -63,6 +76,7 @@ contract MyERC20 is Adminable{
   }
 
   function transfer(address _to, uint _value)
+   BlackList(msg.sender)
    external
    returns(bool)
    {
@@ -74,6 +88,7 @@ contract MyERC20 is Adminable{
   }
 
  function transferFrom(address _from, address _to, uint _value)
+  BlackList(msg.sender)
   public
   returns(bool)
   {
@@ -86,7 +101,7 @@ contract MyERC20 is Adminable{
     return true;
  }
 
-  function approve(address _to, uint _value) public returns(bool){
+  function approve(address _to, uint _value) public BlackList(msg.sender) returns(bool){
     require(_balances[msg.sender] >= _value, "You have not enough MyERC20 tokens to approve!");
     _allowances[msg.sender][_to] += _value;
     emit Approval(msg.sender, _to, _value);
@@ -99,6 +114,7 @@ contract MyERC20 is Adminable{
  }
 
  function increaseAllowance(address _spender, uint _value)
+    BlackList(msg.sender)
     public
  {
     require(_balances[msg.sender] >= _value + _allowances[msg.sender][_spender], "Not enough tokens to allow!");
@@ -107,6 +123,7 @@ contract MyERC20 is Adminable{
  }
 
  function decreaseAllowance(address _spender, uint _value)
+    BlackList(msg.sender)
     public
  {
     require(_allowances[msg.sender][_spender] >= _value, "Allowance is less than zero!");

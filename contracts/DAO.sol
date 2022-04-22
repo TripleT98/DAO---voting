@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import "hardhat/console.sol";
-
 contract DAO {
 
     address public token;
@@ -121,7 +119,7 @@ contract DAO {
         (success,) = _proposal.recepient.call{value:0}(_proposal.signature);
     }
 
-    function finish(uint _id) isExist(_id) public isExist(_id) {
+    function finish(uint _id) isExist(_id) public {
         Proposal storage current_proposal = proposals[_id];
         require(current_proposal.start_time + current_proposal.duration <= block.timestamp, "Error: Can`t finish this proposal yet!");
         require(current_proposal.resolve_votes != current_proposal.reject_votes, "Error: Can`t finish this proposal while `resolve votes` amount is equals to `reject votes` amount!");
@@ -145,7 +143,10 @@ contract DAO {
         uint[] storage votes = userToVotes[_voter];
         for(uint i = 0; i < votes.length; i++){
             if(proposals[votes[i]].recepient == address(0)){
-                delete votes[i];
+                uint el = votes[i];
+                votes[i] = votes[votes.length - 1];
+                votes[votes.length - 1] = el;
+                votes.pop();
             }
         }
         return votes.length == 0;
@@ -155,7 +156,8 @@ contract DAO {
         require(isOnVote(msg.sender),"Error: Cannot withdraw while you are on auction!");
         require(vote_balances[msg.sender] != 0, "Error: You have no deposit on this contract!");
         bool success = _transfer(msg.sender,vote_balances[msg.sender]);
-        require(success, "Error: Can't execute transfer withdraw function!");
+        require(success, "Error: Can`t execute withdraw function!");
+        vote_balances[msg.sender] = 0;
     }
 
 }

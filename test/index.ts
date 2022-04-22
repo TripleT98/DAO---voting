@@ -205,6 +205,33 @@ it("Testing finish function. Reject case", async()=>{
 
   })
 
+  it("Testing all cases of withdraw function.", async()=>{
+    await mintAndAapproveERC20ToDAO(owner, my_votes);
+    await dao.connect(owner).deposit(my_votes);
+
+    let phrase: string = "Some phrase";
+    let description: string = `Change phrase on Experimental contract to ${phrase}`;
+    let signature: string = signatures.setPhrase([phrase]);
+    await dao.connect(owner).addProposal(signature, exp.address, description);
+    await dao.connect(owner).vote(1,true);
+///////////////
+    console.log("Trying to withdraw while on voting");
+    let err_mess: string = "Error: Cannot withdraw while you are on auction!";
+    await expect(dao.connect(owner).withdraw()).to.be.revertedWith(err_mess);
+//////////////
+    await increaseTime(proposal_duration);
+
+    await dao.finish(1)
+    expect(String(await erc20.balanceOf(owner.address))).to.equal("0")
+
+    await dao.connect(owner).withdraw();
+    expect(String(await erc20.balanceOf(owner.address))).to.equal(my_votes)
+////////////////
+    console.log("Trying to withdra having no tokens on deposit")
+    err_mess = "Error: You have no deposit on this contract!";
+    await expect(dao.connect(owner).withdraw()).to.be.revertedWith(err_mess);
+///////////////
+  })
 
 
   describe("Testing errors", async()=>{
@@ -253,6 +280,43 @@ it("Testing finish function. Reject case", async()=>{
     it("Trying to call deposit function without allowance to DAO contract", async()=>{
       let err_mess: string = "Error: Can not execute deposit function!";
       await expect(dao.connect(owner).deposit(my_votes)).to.be.revertedWith(err_mess);
+    })
+
+    it("Trying to vote to not existing proposal", async()=>{
+      let err_mess: string = "Error: This proposal doesn`t exist!";
+      await expect(dao.connect(owner).vote(1, true)).to.be.revertedWith(err_mess);
+    })
+
+    it("Trying to finish not existing proposal", async()=>{
+      let err_mess: string = "Error: This proposal doesn`t exist!";
+      await expect(dao.finish(1)).to.be.revertedWith(err_mess);
+    })
+
+    it("Transfer execution error", async()=>{
+      await mintAndAapproveERC20ToDAO(owner, my_votes);
+      await dao.connect(owner).deposit(my_votes);
+
+      await erc20.connect(owner).addIntoBlackList(dao.address);
+
+      let err_mess: string = "Error: Can`t execute withdraw function!";
+      await expect(dao.connect(owner).withdraw()).to.be.revertedWith(err_mess);
+    })
+
+    it("Trying to vote having zero balance", async()=>{
+      let phrase: string = "Some phrase";
+      let err_mess: string = "Error: Your balance is equals to zero!";
+      let description: string = `Change phrase on Experimental contract to ${phrase}`;
+      let signature: string = signatures.setPhrase([phrase]);
+      await dao.connect(owner).addProposal(signature, exp.address, description);
+      await expect(dao.connect(owner).vote(1, true)).to.be.revertedWith(err_mess);
+    })
+
+    it("Testing isChairman modifier", async()=>{
+      let phrase: string = "Some phrase";
+      let err_mess: string = "Error: Only chairman can add proposal!";
+      let description: string = `Change phrase on Experimental contract to ${phrase}`;
+      let signature: string = signatures.setPhrase([phrase]);
+      await expect(dao.connect(user1).addProposal(signature, exp.address, description)).to.be.revertedWith(err_mess);
     })
 
   })
