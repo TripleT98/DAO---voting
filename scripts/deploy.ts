@@ -23,12 +23,12 @@ async function main() {
 
   console.log("ERC20 deployed to:", erc20.address);
 
-  const DAO = await ethers.getContractFactory("DAO");
+  const DAO = await ethers.getContractFactory("DAO2");
   const dao = await DAO.deploy(erc20.address,process.env.PUBLIC_KEY as string,259200);
 
   await dao.deployed();
 
-  console.log("DAO voting deployed to:", dao.address);
+  console.log("DAO2 voting deployed to:", dao.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

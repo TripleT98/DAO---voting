@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-contract DAO {
+contract DAO2 {
 
     address public token;
     address public chairman;
@@ -27,12 +27,13 @@ contract DAO {
         ExecutionFail
     }
 
-    mapping (address => uint[]) public userToVotes;
+    mapping (address => uint) public lastVoteForUser;
     mapping (uint => Proposal) public proposals;
     mapping (address => uint) public voteBalances;
     mapping (bytes => uint) public signatureToId;
 
     event ProposalFinished(uint indexed id, Status status, address finisher);
+    event ProposalStarted(uint indexed id, uint indexed timestamp, bytes signature);
 
     modifier isExist(uint _id){
         require(proposals[_id].signature.length != 0, "Error: This proposal doesn`t exist!");
@@ -82,6 +83,7 @@ contract DAO {
         currentProposal.description = _description;
         currentProposal.duration = voteDuration;
         signatureToId[_signature] = id;
+        emit ProposalStarted(id, block.timestamp, _signature);
         id++;
     }
 
@@ -97,7 +99,10 @@ contract DAO {
             currentProposal.rejectVotes += _tokenAmount;
         }
         currentProposal.voters[msg.sender] += _tokenAmount;
-        userToVotes[msg.sender].push(_id);
+        uint freezeTime = currentProposal.startTime + currentProposal.duration;
+        if(freezeTime > lastVoteForUser[msg.sender]){
+          lastVoteForUser[msg.sender] = freezeTime;
+        }
     }
 
     function _transferFrom(address _from, address _to, uint _amount) internal returns(bool){
@@ -135,24 +140,11 @@ contract DAO {
             emit ProposalFinished(_id, Status.Rejected, msg.sender);
         }
         delete proposals[_id];
-
     }
 
-    function isOnVote(address _voter) public returns(bool){
-        uint[] storage votes = userToVotes[_voter];
-        for(uint i = 0; i < votes.length; i++){
-            if(proposals[votes[i]].recepient == address(0)){
-                uint el = votes[i];
-                votes[i] = votes[votes.length - 1];
-                votes[votes.length - 1] = el;
-                votes.pop();
-            }
-        }
-        return votes.length == 0;
-    }
 
     function withdraw() public {
-        require(isOnVote(msg.sender),"Error: Cannot withdraw while you are on auction!");
+        require(lastVoteForUser[msg.sender] <= block.timestamp,"Error: Cannot withdraw while you are on auction!");
         require(voteBalances[msg.sender] != 0, "Error: You have no deposit on this contract!");
         bool success = _transfer(msg.sender,voteBalances[msg.sender]);
         require(success, "Error: Can`t execute withdraw function!");

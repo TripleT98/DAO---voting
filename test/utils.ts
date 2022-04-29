@@ -8,16 +8,16 @@ let web3 = new Web3(hre.network.provider);
 export type TProrosal = {
   recepient: string;
   description: string;
-  reject_votes: string;
-  resolve_votes: string;
+  rejectVotes: string;
+  resolveVotes: string;
   duration: string;
   signature: string;
 }
 
 export function getProposal(proposal:any): any {
-  let {recepient, description, reject_votes, resolve_votes, duration, signature} = proposal;
+  let {recepient, description, rejectVotes, resolveVotes, duration, signature} = proposal;
   return {
-    signature, recepient, description, reject_votes: String(reject_votes), resolve_votes: String(resolve_votes), duration: String(duration)
+    signature, recepient, description, rejectVotes: String(rejectVotes), resolveVotes: String(resolveVotes), duration: String(duration)
   }
 }
 

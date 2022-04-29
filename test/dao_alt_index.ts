@@ -6,7 +6,7 @@ import { Signer, Contract, ContractFactory, BigNumber } from "ethers";
 let Web3 = require("web3");
 let {getProposal, TProrosal, signatures, ProposalFabric} = require("./utils");
 
-describe("Testing DAO", async function () {
+describe("Testing DAO2 contract", async function () {
 
   let web3: any;
   hre.Web3 = Web3;
@@ -49,7 +49,7 @@ describe("Testing DAO", async function () {
     erc20 = await ERC20.connect(owner).deploy();
     await erc20.deployed();
 
-    DAO = await ethers.getContractFactory("DAO");
+    DAO = await ethers.getContractFactory("DAO2");
     dao = await DAO.connect(owner).deploy(erc20.address, owner.address, proposal_duration);
     await dao.deployed();
 
@@ -136,7 +136,7 @@ it("Testing all cases of finish function. Execution case", async()=>{
   err_mess = "Error: Can`t finish this proposal while `resolve votes` amount is equals to `reject votes` amount!";
   await expect(dao.finish(1)).to.be.revertedWith(err_mess);
 //////////////
-  console.log("Trying to finish while amount of voting tokens is lower than `minimumQuorum` value!");
+  console.log("Trying to finish while amount of voting tokns is lower than `minimumQuorum` value!");
   err_mess = "Error: Can`t finish this proposal while enough tokens not used in vote";
   await mintAndAapproveERC20ToDAO(owner, String(Number(my_votes)*10));
   await dao.connect(owner).deposit(my_votes);
@@ -150,6 +150,7 @@ it("Testing all cases of finish function. Execution case", async()=>{
   await dao.connect(user3).deposit(String(Number(my_votes)*20));
 
   await increaseTime(proposal_duration);
+
 
   await dao.connect(user3).vote(1,true);
 
@@ -338,6 +339,7 @@ it("Testing finish function. Reject case", async()=>{
       let err_mess: string = "Error: Zero token amount!";
       await expect(dao.connect(owner).deposit("0")).to.be.revertedWith(err_mess);
     })
+
 
   })
 });
